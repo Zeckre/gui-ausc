@@ -11,6 +11,16 @@ CTkTextboxClass = getattr(ctk, "CTkTextbox", None)
 CTkComboBoxClass = getattr(ctk, "CTkComboBox", None)
 CTkOptionMenuClass = getattr(ctk, "CTkOptionMenu", None)
 
+try:
+    from .live_plot import RealtimePlotController, MATPLOTLIB_AVAILABLE
+except Exception:
+    # try relative import fallback for direct script execution
+    try:
+        from live_plot import RealtimePlotController, MATPLOTLIB_AVAILABLE
+    except Exception:
+        RealtimePlotController = None
+        MATPLOTLIB_AVAILABLE = False
+
 
 def create_textbox(parent, width=None, height=None):
     """Crear un widget editable o un fallback.
@@ -112,18 +122,39 @@ def get_tab_frame(parent, tab_name):
 
         container = ctk.CTkFrame(frame, fg_color="white", corner_radius=10)
         container.pack(fill="both", expand=False, padx=12, pady=6)
-        placeholder = ctk.CTkLabel(container, text="Aquí irá el gráfico en tiempo real", text_color="#333333")
-        placeholder.pack(padx=12, pady=24)
 
-        # Botones de control de grabación
+        # If matplotlib/live_plot isn't available, keep the placeholder
+        if RealtimePlotController is None or not MATPLOTLIB_AVAILABLE:
+            placeholder = ctk.CTkLabel(container, text="Aquí irá el gráfico en tiempo real (matplotlib no disponible)", text_color="#333333")
+            placeholder.pack(padx=12, pady=24)
+            plot_ctrl = None
+        else:
+            plot_ctrl = RealtimePlotController(container)
+
+        # Botones de control de grabación y de la visualización
         btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
         btn_frame.pack(pady=8)
+        # recording buttons (kept as before)
         btn_record = ctk.CTkButton(btn_frame, text="Grabar", command=lambda: print("Grabando..."))
-        btn_stop = ctk.CTkButton(btn_frame, text="Detener", command=lambda: print("Grabación detenida"))
-        btn_save = ctk.CTkButton(btn_frame, text="Guardar señal", command=lambda: print("Grabación guardada"))
         btn_record.grid(row=0, column=0, padx=6)
-        btn_stop.grid(row=0, column=1, padx=6)
+
+        btn_stop_record = ctk.CTkButton(btn_frame, text="Detener", command=lambda: print("Grabación detenida"))
+        btn_stop_record.grid(row=0, column=1, padx=6)
+
+        btn_save = ctk.CTkButton(btn_frame, text="Guardar señal", command=lambda: print("Grabación guardada"))
         btn_save.grid(row=0, column=2, padx=6)
+
+        # Visualization control buttons (start/stop)
+        vis_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        vis_frame.pack(pady=6)
+        if plot_ctrl is None:
+            btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", state="disabled")
+            btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", state="disabled")
+        else:
+            btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", command=lambda: plot_ctrl.start())
+            btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", command=lambda: plot_ctrl.stop())
+        btn_show.grid(row=0, column=0, padx=6)
+        btn_stop_vis.grid(row=0, column=1, padx=6)
 
     elif tab_name == "Grabaciones":
         # Listado de grabaciones (placeholder)
