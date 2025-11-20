@@ -121,7 +121,7 @@ def get_tab_frame(parent, tab_name):
         title.pack(pady=(8, 4))
 
         container = ctk.CTkFrame(frame, fg_color="white", corner_radius=10)
-        container.pack(fill="both", expand=False, padx=12, pady=6)
+        container.pack(fill="both", expand=True, padx=12, pady=6)
 
         # If matplotlib/live_plot isn't available, keep the placeholder
         if RealtimePlotController is None or not MATPLOTLIB_AVAILABLE:
@@ -129,7 +129,11 @@ def get_tab_frame(parent, tab_name):
             placeholder.pack(padx=12, pady=24)
             plot_ctrl = None
         else:
-            plot_ctrl = RealtimePlotController(container)
+            try:
+                plot_ctrl = RealtimePlotController(container)
+            except Exception as e:
+                print("Error instantiating RealtimePlotController:", e)
+                plot_ctrl = None
 
         # Botones de control de grabación y de la visualización
         btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
@@ -147,12 +151,37 @@ def get_tab_frame(parent, tab_name):
         # Visualization control buttons (start/stop)
         vis_frame = ctk.CTkFrame(frame, fg_color="transparent")
         vis_frame.pack(pady=6)
+        # small status label
+        status_label = ctk.CTkLabel(vis_frame, text="Estado: detenido")
+        status_label.grid(row=0, column=2, padx=8)
+        def start_plot():
+            if plot_ctrl is None:
+                print("Mostrar gráfica: controlador no disponible")
+                return
+            try:
+                plot_ctrl.start()
+                status_label.configure(text="Estado: corriendo")
+                print("Plot started")
+            except Exception as e:
+                print("Error al iniciar la gráfica:", e)
+
+        def stop_plot():
+            if plot_ctrl is None:
+                print("Parar gráfica: controlador no disponible")
+                return
+            try:
+                plot_ctrl.stop()
+                status_label.configure(text="Estado: detenido")
+                print("Plot stopped")
+            except Exception as e:
+                print("Error al parar la gráfica:", e)
+
         if plot_ctrl is None:
             btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", state="disabled")
             btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", state="disabled")
         else:
-            btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", command=lambda: plot_ctrl.start())
-            btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", command=lambda: plot_ctrl.stop())
+            btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", command=start_plot)
+            btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", command=stop_plot)
         btn_show.grid(row=0, column=0, padx=6)
         btn_stop_vis.grid(row=0, column=1, padx=6)
 
