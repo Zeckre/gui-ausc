@@ -12,8 +12,23 @@ except Exception:
 
 
 def _load_image(path, size=None):
-    if not Image or not os.path.exists(path):
+    # Try the path as given first
+    if not Image:
+        print("Pillow not installed: cannot load images (PIL missing)")
         return None
+
+    # If path doesn't exist, also try relative to this script directory
+    tried_paths = [path]
+    if not os.path.exists(path):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        alt = os.path.join(script_dir, path)
+        tried_paths.append(alt)
+        if os.path.exists(alt):
+            path = alt
+    if not os.path.exists(path):
+        print(f"_load_image: file not found. Tried: {tried_paths}")
+        return None
+
     try:
         img = Image.open(path)
         if size:
@@ -26,6 +41,9 @@ def _load_image(path, size=None):
                 pass
         return ImageTk.PhotoImage(img)
     except Exception:
+        import traceback
+        print(f"_load_image: failed to open/process image '{path}'")
+        traceback.print_exc()
         return None
 
 
