@@ -159,7 +159,8 @@ def get_tab_frame(parent, tab_name):
                 print("Mostrar gráfica: controlador no disponible")
                 return
             try:
-                plot_ctrl.start()
+                # start with faster sampling and slower plotting to reduce redraws
+                plot_ctrl.start(sample_interval_ms=50, plot_interval_ms=200)
                 status_label.configure(text="Estado: corriendo")
                 print("Plot started")
             except Exception as e:

@@ -63,8 +63,8 @@ def main():
     header.grid(row=0, column=0, sticky="ew", padx=16, pady=12)
     header.grid_columnconfigure(1, weight=1)
 
-    left_img = _load_image("escudounipamplona.png", size=(105, 105))
-    right_img = _load_image("siibtel_logo.png", size=(105, 105))
+    left_img = _load_image("escudounipamplona.png", size=(90, 90))
+    right_img = _load_image("siibtel_logo.png", size=(90, 90))
 
     if left_img:
         lbl_left = ctk.CTkLabel(header, image=left_img, text="")
@@ -75,8 +75,8 @@ def main():
     title_frame = ctk.CTkFrame(header, fg_color="transparent")
     title_frame.grid(row=0, column=1, sticky="ew")
     title_frame.grid_columnconfigure(0, weight=1)
-    title = ctk.CTkLabel(title_frame, text="Auscultation Monitor", font=(None, 36, "bold"), text_color="#03045E")
-    subtitle = ctk.CTkLabel(title_frame, text="Sistema de monitoreo estetoscopio digital", font=(None, 24), text_color="#0077B6")
+    title = ctk.CTkLabel(title_frame, text="Auscultation Monitor", font=(None, 26, "bold"), text_color="#03045E")
+    subtitle = ctk.CTkLabel(title_frame, text="Sistema de monitoreo estetoscopio digital", font=(None, 20), text_color="#0077B6")
     title.pack(anchor="center")
     subtitle.pack(anchor="center")
 

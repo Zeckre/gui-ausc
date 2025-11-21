@@ -80,43 +80,73 @@ class RealtimePlotController:
     def start(self, interval_ms=50):
         if self._running:
             return
+        # start two loops: sampling (fast) and plotting (slower)
         self._running = True
-        self._schedule_next(interval_ms)
+        self._sample_after_id = None
+        self._plot_after_id = None
+        # default intervals if caller provided a single value
+        self._sample_interval_ms = interval_ms
+        self._plot_interval_ms = max(100, interval_ms * 4)
+        self._schedule_sample()
+        self._schedule_plot()
 
     def stop(self):
         self._running = False
-        if self._after_id is not None:
-            try:
-                self.parent.after_cancel(self._after_id)
-            except Exception:
-                pass
-            self._after_id = None
+        for aid in (getattr(self, "_sample_after_id", None), getattr(self, "_plot_after_id", None)):
+            if aid is not None:
+                try:
+                    self.parent.after_cancel(aid)
+                except Exception:
+                    pass
+        self._sample_after_id = None
+        self._plot_after_id = None
 
-    def _schedule_next(self, interval_ms):
+    def _schedule_sample(self):
         if not self._running:
             return
-        self._after_id = self.parent.after(interval_ms, self._update, interval_ms)
+        # schedule next sample
+        self._sample_after_id = self.parent.after(self._sample_interval_ms, self._sample)
 
-    def _update(self, interval_ms):
-        current_time = time.time() - self.start_time
-        voltage = self._read_voltage()
-        self.time_data.append(current_time)
-        self.voltage_data.append(voltage)
-
-        # keep only last ~12 seconds
-        while self.time_data and (current_time - self.time_data[0]) > 12:
-            self.time_data.pop(0)
-            self.voltage_data.pop(0)
-
-        self.line.set_data(self.time_data, self.voltage_data)
-        if current_time >= 10:
-            self.ax.set_xlim(current_time - 10, current_time + 1)
-        else:
-            self.ax.set_xlim(0, 10)
-
+    def _sample(self):
+        # perform one reading and enqueue it
         try:
-            self.canvas.draw_idle()
+            current_time = time.time() - self.start_time
+            voltage = self._read_voltage()
+            self.time_data.append(current_time)
+            self.voltage_data.append(voltage)
+            # limit buffer length indirectly by time in plot stage
         except Exception:
             pass
+        finally:
+            self._schedule_sample()
 
-        self._schedule_next(interval_ms)
+    def _schedule_plot(self):
+        if not self._running:
+            return
+        self._plot_after_id = self.parent.after(self._plot_interval_ms, self._plot_update)
+
+    def _plot_update(self):
+        if not self._running:
+            return
+        try:
+            if not self.time_data:
+                return
+            current_time = time.time() - self.start_time
+            # keep only last ~12 seconds
+            while self.time_data and (current_time - self.time_data[0]) > 12:
+                self.time_data.pop(0)
+                self.voltage_data.pop(0)
+
+            self.line.set_data(self.time_data, self.voltage_data)
+            if current_time >= 10:
+                self.ax.set_xlim(current_time - 10, current_time + 1)
+            else:
+                self.ax.set_xlim(0, 10)
+
+            try:
+                # draw once per plot interval
+                self.canvas.draw_idle()
+            except Exception:
+                pass
+        finally:
+            self._schedule_plot()
