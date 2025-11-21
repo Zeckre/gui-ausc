@@ -53,6 +53,7 @@ class RealtimePlotController:
         self.start_time = time.time()
         self._running = False
         self._after_id = None
+        self._sample_count = 0
 
         # ADC setup if available
         self.GAIN = 1
@@ -65,6 +66,11 @@ class RealtimePlotController:
                 self.adc = None
         else:
             self.adc = None
+        # diagnostics
+        try:
+            print(f"RealtimePlotController init: MATPLOTLIB_AVAILABLE={MATPLOTLIB_AVAILABLE}, ADC_AVAILABLE={ADC_AVAILABLE}, adc_initialized={self.adc is not None}")
+        except Exception:
+            pass
 
     def _read_voltage(self):
         if self.adc is not None:
@@ -73,20 +79,40 @@ class RealtimePlotController:
                 voltage = value * (self.VOLTAGE_FSR / self.MAX_VALUE_16BIT)
                 return voltage
             except Exception:
+                try:
+                    print("RealtimePlotController: ADC read failed, falling back to simulation", flush=True)
+                except Exception:
+                    pass
+                # fall through to simulated
                 pass
         t = time.time() - self.start_time
         return 1.5 + 0.8 * math.sin(2 * math.pi * 0.5 * t) + (random.random() - 0.5) * 0.05
 
-    def start(self, interval_ms=50):
+    def start(self, interval_ms=50, sample_interval_ms=None, plot_interval_ms=None):
+        """Start sampling and plotting. Use either `interval_ms` or named `sample_interval_ms`/`plot_interval_ms`.
+        """
         if self._running:
             return
         # start two loops: sampling (fast) and plotting (slower)
         self._running = True
         self._sample_after_id = None
         self._plot_after_id = None
-        # default intervals if caller provided a single value
-        self._sample_interval_ms = interval_ms
-        self._plot_interval_ms = max(100, interval_ms * 4)
+        # determine intervals
+        if sample_interval_ms is None and plot_interval_ms is None:
+            self._sample_interval_ms = interval_ms
+            self._plot_interval_ms = max(100, interval_ms * 4)
+        else:
+            self._sample_interval_ms = sample_interval_ms or interval_ms
+            self._plot_interval_ms = plot_interval_ms or max(100, self._sample_interval_ms * 4)
+        try:
+            print(f"RealtimePlotController.start: sampling={self._sample_interval_ms}ms, plotting={self._plot_interval_ms}ms")
+        except Exception:
+            pass
+        # ensure at least one plot is drawn immediately so user sees the axes
+        try:
+            self.canvas.draw_idle()
+        except Exception:
+            pass
         self._schedule_sample()
         self._schedule_plot()
 
@@ -115,8 +141,18 @@ class RealtimePlotController:
             self.time_data.append(current_time)
             self.voltage_data.append(voltage)
             # limit buffer length indirectly by time in plot stage
+            # diagnostics: occasionally print a sample for debugging
+            try:
+                self._sample_count += 1
+                if self._sample_count % 20 == 0:
+                    print(f"RealtimePlotController.sample #{self._sample_count}: voltage={voltage:.4f}")
+            except Exception:
+                pass
         except Exception:
-            pass
+            try:
+                print("RealtimePlotController._sample: exception", flush=True)
+            except Exception:
+                pass
         finally:
             self._schedule_sample()
 

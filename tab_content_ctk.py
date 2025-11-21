@@ -1,25 +1,12 @@
 import customtkinter as ctk
-
-# Compat helpers: algunas versiones de customtkinter no incluyen CTkTextbox o CTkComboBox
-CTkTextboxClass = getattr(ctk, "CTkTextbox", None)
-CTkComboBoxClass = getattr(ctk, "CTkComboBox", None)
-import customtkinter as ctk
-
+import subprocess
+import os
+import sys
 
 # Compat helpers: algunas versiones de customtkinter no incluyen CTkTextbox o CTkComboBox
 CTkTextboxClass = getattr(ctk, "CTkTextbox", None)
 CTkComboBoxClass = getattr(ctk, "CTkComboBox", None)
 CTkOptionMenuClass = getattr(ctk, "CTkOptionMenu", None)
-
-try:
-    from .live_plot import RealtimePlotController, MATPLOTLIB_AVAILABLE
-except Exception:
-    # try relative import fallback for direct script execution
-    try:
-        from live_plot import RealtimePlotController, MATPLOTLIB_AVAILABLE
-    except Exception:
-        RealtimePlotController = None
-        MATPLOTLIB_AVAILABLE = False
 
 
 def create_textbox(parent, width=None, height=None):
@@ -123,17 +110,15 @@ def get_tab_frame(parent, tab_name):
         container = ctk.CTkFrame(frame, fg_color="white", corner_radius=10)
         container.pack(fill="both", expand=True, padx=12, pady=6)
 
-        # If matplotlib/live_plot isn't available, keep the placeholder
-        if RealtimePlotController is None or not MATPLOTLIB_AVAILABLE:
-            placeholder = ctk.CTkLabel(container, text="Aquí irá el gráfico en tiempo real (matplotlib no disponible)", text_color="#333333")
-            placeholder.pack(padx=12, pady=24)
-            plot_ctrl = None
-        else:
-            try:
-                plot_ctrl = RealtimePlotController(container)
-            except Exception as e:
-                print("Error instantiating RealtimePlotController:", e)
-                plot_ctrl = None
+        # We'll run the standalone `live-signal.py` as a separate process when
+        # the user requests to show the graph. That script works well standalone
+        # and opens its own matplotlib window. Show placeholder until user starts it.
+        placeholder = ctk.CTkLabel(container, text="Aquí irá el gráfico en tiempo real (pulse 'Mostrar gráfica')", text_color="#333333")
+        placeholder.pack(padx=12, pady=24)
+        # process handle stored in a mutable closure
+        live_proc = {"p": None}
+        # path to the script to run
+        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "live-signal.py")
 
         # Botones de control de grabación y de la visualización
         btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
@@ -155,34 +140,52 @@ def get_tab_frame(parent, tab_name):
         status_label = ctk.CTkLabel(vis_frame, text="Estado: detenido")
         status_label.grid(row=0, column=2, padx=8)
         def start_plot():
-            if plot_ctrl is None:
-                print("Mostrar gráfica: controlador no disponible")
+            # Launch `live-signal.py` in a separate process so it does not block CTk
+            if live_proc["p"] is not None and live_proc["p"].poll() is None:
+                print("live-signal ya está corriendo")
+                status_label.configure(text="Estado: corriendo")
+                return
+            if not os.path.exists(script_path):
+                print(f"No se encuentra {script_path}")
+                status_label.configure(text="Error: script no encontrado")
                 return
             try:
-                # start with faster sampling and slower plotting to reduce redraws
-                plot_ctrl.start(sample_interval_ms=50, plot_interval_ms=200)
+                # Use the same Python executable
+                cmd = [sys.executable, script_path]
+                # Start detached so the matplotlib window is independent
+                p = subprocess.Popen(cmd, cwd=os.path.dirname(script_path))
+                live_proc["p"] = p
                 status_label.configure(text="Estado: corriendo")
-                print("Plot started")
+                print("live-signal launched, pid=", p.pid)
             except Exception as e:
-                print("Error al iniciar la gráfica:", e)
+                print("Error al lanzar live-signal:", e)
+                status_label.configure(text=f"Error: {e}")
 
         def stop_plot():
-            if plot_ctrl is None:
-                print("Parar gráfica: controlador no disponible")
+            # Terminate the live-signal process if it's running
+            p = live_proc.get("p")
+            if p is None:
+                print("No hay proceso de live-signal corriendo")
+                status_label.configure(text="Estado: detenido")
                 return
             try:
-                plot_ctrl.stop()
+                if p.poll() is None:
+                    p.terminate()
+                    p.wait(timeout=2)
+                    print("live-signal terminated")
+                else:
+                    print("live-signal ya terminó")
+            except Exception:
+                try:
+                    p.kill()
+                except Exception:
+                    pass
+            finally:
+                live_proc["p"] = None
                 status_label.configure(text="Estado: detenido")
-                print("Plot stopped")
-            except Exception as e:
-                print("Error al parar la gráfica:", e)
 
-        if plot_ctrl is None:
-            btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", state="disabled")
-            btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", state="disabled")
-        else:
-            btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", command=start_plot)
-            btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", command=stop_plot)
+        btn_show = ctk.CTkButton(vis_frame, text="Mostrar gráfica", command=start_plot)
+        btn_stop_vis = ctk.CTkButton(vis_frame, text="Parar gráfica", command=stop_plot)
         btn_show.grid(row=0, column=0, padx=6)
         btn_stop_vis.grid(row=0, column=1, padx=6)
 
