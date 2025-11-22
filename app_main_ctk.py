@@ -73,7 +73,7 @@ def main():
     # Pestañas (hacer que la vista de pestañas se expanda verticalmente)
     tabview = ctk.CTkTabview(root, width=1000)
     tabview.grid(row=1, column=0, sticky="nsew", padx=16, pady=(14, 0))
-    tab_names = ["Adquisición", "Análisis", "Registro", "Tiempo Real", "Acerca de"]
+    tab_names = ["Adquisición", "Análisis", "Registro", "Tiempo real", "Acerca de"]
     for name in tab_names:
         tabview.add(name)
 

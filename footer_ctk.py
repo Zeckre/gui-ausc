@@ -26,7 +26,7 @@ def create_footer(root, check_i2c_func):
     time_label = ctk.CTkLabel(footer, text="--:--:--")
     time_label.grid(row=0, column=1)
 
-    credit = ctk.CTkLabel(footer, text="🔵 By: Duvan Rico (Zeckre)", font=(None, 18))
+    credit = ctk.CTkLabel(footer, text="By: Duvan Rico (Zeckre)", font=(None, 18))
     credit.grid(row=0, column=2, sticky="e")
 
     def update_time_and_status():
@@ -40,7 +40,7 @@ def create_footer(root, check_i2c_func):
             connected = check_i2c_func()
         except Exception:
             connected = False
-        status_label.configure(text=f"Estado del dispositivo: {'🟢 Activo' if connected else '🔴 Desconectado'}", font=(None, 18))
+        status_label.configure(text=f"Estado del dispositivo: {'Activo' if connected else 'Desconectado'}", font=(None, 18))
         root.after(1000, update_time_and_status)
 
     # Arrancar primer ciclo
