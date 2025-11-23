@@ -213,6 +213,9 @@ def get_tab_frame(parent, tab_name):
         info5.pack(padx=16, pady=8)
 
     elif tab_name == "Análisis":
+        title = ctk.CTkLabel(frame, text="Análisis de señales", font=(None, 18, "bold"))
+        title.pack(pady=(8, 4))
+
         selected_file = {"path": None}
 
         # --- Funciones auxiliares ---
@@ -258,7 +261,7 @@ def get_tab_frame(parent, tab_name):
                 img2 = fig_to_ctkimage(fig2)
                 update_placeholder(g2_placeholder, img2)
 
-                status_label.configure(text="Gráficas g1 y g2 incrustadas")
+                status_label.configure(text="Gráficas incrustadas")
             except Exception as e:
                 status_label.configure(text=f"Error al generar gráficas: {e}")
 
@@ -289,14 +292,14 @@ def get_tab_frame(parent, tab_name):
         ctk.CTkRadioButton(top_frame, text="FFT", variable=method_var, value="fft").pack(side="left", padx=6)
         ctk.CTkRadioButton(top_frame, text="Wavelet", variable=method_var, value="wavelet").pack(side="left", padx=6)
 
-        btn_run = ctk.CTkButton(top_frame, text="Generar gráficas g1 y g2", command=run_both_graphs)
+        btn_run = ctk.CTkButton(top_frame, text="Iniciar", command=run_both_graphs)
         btn_run.pack(side="left", padx=6)
 
         btn_audio = ctk.CTkButton(top_frame, text="Escuchar señal", command=play_signal)
         btn_audio.pack(side="left", padx=6)
 
         # Placeholders verticales
-        g1_placeholder = ctk.CTkFrame(frame, fg_color="white", height=300)
+        g1_placeholder = ctk.CTkFrame(frame, fg_color="white", height=200)
         g1_placeholder.pack(fill="both", expand=True, padx=12, pady=6)
         g2_placeholder = ctk.CTkFrame(frame, fg_color="white", height=200)
         g2_placeholder.pack(fill="both", expand=True, padx=12, pady=6)
