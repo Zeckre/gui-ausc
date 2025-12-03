@@ -1,16 +1,9 @@
 import pandas as pd
+import customtkinter as ctk
 import matplotlib.pyplot as plt
-import sys
-import os
-
-COLUMNA_TIEMPO = 'Tiempo (s)'
-COLUMNA_VOLTAJE = 'Valor Voltios (sin offset)'
+import sys, os
 
 def plot_g1(path):
-    """
-    Genera la gráfica principal (g1) a partir de un archivo CSV.
-    Devuelve la figura Matplotlib (fig) sin mostrar ventana.
-    """
     if not os.path.exists(path):
         raise FileNotFoundError(f"No se encontró el archivo '{path}'")
 
@@ -18,9 +11,9 @@ def plot_g1(path):
     df = pd.read_csv(path)
 
     # Crear figura
-    fig, ax = plt.subplots(figsize=(6,4))
-    ax.plot(df[COLUMNA_TIEMPO], df[COLUMNA_VOLTAJE],
-            label='Voltaje ADS1115',
+    fig, ax = plt.subplots(figsize=(4,2))
+    ax.plot(df['tiempo'], df['voltios'],
+            label='Voltaje MCP3202',
             color='r',
             linewidth=0.5)
     ax.set_title('Lecturas DAQ')
@@ -34,10 +27,9 @@ def plot_g1(path):
 
 # Bloque para ejecución independiente desde consola
 if __name__ == "__main__":
-    import sys
+    #import sys
     if len(sys.argv) < 2:
         print("Uso: python cargar_graficar_csv.py archivo.csv")
     else:
         fig = plot_g1(sys.argv[1])
         plt.show()
-

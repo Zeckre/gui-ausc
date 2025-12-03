@@ -32,7 +32,7 @@ def main():
     # Crear la ventana principal
     root = ctk.CTk()
     root.title("BioMonitor - Estetoscopio Digital")
-    root.geometry("1820x980")
+    root.geometry("2120x1180")
     root.grid_columnconfigure(0, weight=1)
     # Hacer que la fila de la vista de pestañas sea expandible para
     # que el contenido de las pestañas ocupe todo el espacio disponible.

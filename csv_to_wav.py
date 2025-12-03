@@ -3,15 +3,10 @@ import numpy as np
 from scipy.io.wavfile import write
 import sys, subprocess, os
 
-COLUMNA_VOLTAJE = 'Valor Voltios (sin offset)'
-SAMPLE_RATE_AUDIO = 380  # usa un valor estándar para que se escuche bien
+COLUMNA_VOLTAJE = 'voltios'
+SAMPLE_RATE_AUDIO = 6800  # usa un valor estándar para que se escuche bien
 
 def csv_to_wav(path_csv, sample_rate=SAMPLE_RATE_AUDIO):
-    """
-    Convierte un archivo CSV con columna de voltajes en un archivo WAV.
-    El archivo WAV se guarda en la misma ruta y con el mismo nombre base.
-    Devuelve la ruta del archivo WAV generado.
-    """
     if not os.path.exists(path_csv):
         raise FileNotFoundError(f"No se encontró el archivo '{path_csv}'")
 
@@ -34,7 +29,7 @@ def csv_to_wav(path_csv, sample_rate=SAMPLE_RATE_AUDIO):
     if max_abs_val == 0:
         raise ValueError("La señal es plana (voltaje constante), no se puede generar audio.")
 
-    escala_audio = 32767 / max_abs_val
+    escala_audio = 4096/ max_abs_val
     audio_data = (voltajes * escala_audio).astype(np.int16)
 
     # Guardar WAV

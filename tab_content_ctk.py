@@ -1,8 +1,9 @@
 import customtkinter as ctk
-import subprocess, os, sys, threading
+import subprocess, os, sys, threading, sqlite3
 import adquirircsv as adquisicion
 from io import BytesIO
 from PIL import Image
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import cargar_graficar_csv, fft_csv, dwt_csv, csv_to_wav
 
 # Compat helpers: algunas versiones de customtkinter no incluyen CTkTextbox o CTkComboBox
@@ -187,11 +188,218 @@ def get_tab_frame(parent, tab_name):
         ).grid(row=0, column=1, padx=6)
 
     elif tab_name == "Registro":
-        # Listado de grabaciones (placeholder)
-        title = ctk.CTkLabel(frame, text="Señales guardadas", font=(None, 18, "bold"))
-        title.pack(pady=(8, 4))
-        info = ctk.CTkLabel(frame, text="Aquí se listarán las grabaciones con opciones de ver, eliminar y exportar.")
-        info.pack(padx=12, pady=8)
+        # Función auxiliar para limpiar un frame si existe
+        def clear_frame_safe(frame):
+            if frame and frame.winfo_exists():
+                for w in frame.winfo_children():
+                    w.destroy()
+
+        registro_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        registro_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # --- Columna izquierda: formulario ---
+        form_frame = ctk.CTkFrame(registro_frame, fg_color="transparent")
+        form_frame.pack(side="left", fill="y", padx=10)
+
+        title = ctk.CTkLabel(form_frame, text="Registro de Usuario", font=(None, 18, "bold"))
+        title.pack(pady=(8, 4), fill="x")
+
+        entry_nombre = ctk.CTkEntry(form_frame, placeholder_text="Nombres")
+        entry_nombre.pack(pady=4, fill="x")
+        
+        entry_apellido = ctk.CTkEntry(form_frame, placeholder_text="Apellidos")
+        entry_apellido.pack(pady=4, fill="x")
+                
+        entry_nit = ctk.CTkEntry(form_frame, placeholder_text="NIT")
+        entry_nit.pack(pady=4, fill="x")
+
+        entry_edad = ctk.CTkEntry(form_frame, placeholder_text="Edad")
+        entry_edad.pack(pady=4, fill="x")
+
+        entry_correo = ctk.CTkEntry(form_frame, placeholder_text="Correo electrónico")
+        entry_correo.pack(pady=4, fill="x")
+
+        selected_signals = []
+
+        def select_signals():
+            files = ctk.filedialog.askopenfilenames(
+                title="Seleccionar señales",
+                filetypes=[("Archivos de señal", "*.csv *.txt *.dat"), ("Todos", "*.*")]
+            )
+            if files:
+                selected_signals.clear()
+                selected_signals.extend(files)
+                signals_label.configure(text=f"{len(files)} señales seleccionadas")
+
+                # Limpiar vista previa antes de actualizar
+                for widget in preview_frame.winfo_children():
+                        widget.destroy()
+
+                # Graficar solo la primera señal
+                archivo = selected_signals[0]
+                try:
+                    fig = cargar_graficar_csv.plot_g1(archivo)
+
+                    canvas = FigureCanvasTkAgg(fig, master=preview_frame)
+                    canvas.draw()
+                    canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+
+                    toolbar = NavigationToolbar2Tk(canvas, preview_frame)
+                    toolbar.update()
+                    toolbar.pack(side="top", fill="x")
+
+                except Exception as e:
+                    ctk.CTkLabel(preview_frame, text=f"Error al graficar {archivo}: {e}", text_color="red").pack()
+
+
+        btn_signals = ctk.CTkButton(form_frame, text="Seleccionar señales", command=select_signals)
+        btn_signals.pack(pady=4, fill="x")
+
+        signals_label = ctk.CTkLabel(form_frame, text="Ninguna señal seleccionada", text_color="#333333")
+        signals_label.pack(pady=4, fill="x")
+
+        def save_to_db():
+            nombre = entry_nombre.get()
+            edad = entry_edad.get()
+            apellido = entry_apellido.get()
+            correo = entry_correo.get()
+            nit = entry_nit.get()
+
+            if not nombre or not apellido or not edad or not correo or not nit or not selected_signals:
+                status_label.configure(text="Error: complete todos los campos y seleccione señales")
+                return
+
+            try:
+                conn = sqlite3.connect("usuarios.db")
+                cursor = conn.cursor()
+
+                # Crear tablas si no existen
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS registro (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        nit INTEGER,
+                        nombre TEXT,
+                        apellido TEXT,
+                        edad INTEGER,
+                        correo TEXT
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS señales (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        nit TEXT,
+                        archivo TEXT,
+                        FOREIGN KEY (nit) REFERENCES registro(nit)
+                    )
+                """)
+
+                # Verificar si el NIT ya existe
+                cursor.execute("SELECT nit FROM registro WHERE nit = ?", (nit,))
+                existe = cursor.fetchone()
+
+                if not existe:
+                    cursor.execute("INSERT INTO registro (nit, nombre, apellido, edad, correo) VALUES (?, ?, ?, ?, ?)",
+                                (nit, nombre, apellido, edad, correo))
+
+                # Insertar señales asociadas
+                for archivo in selected_signals:
+                    cursor.execute("INSERT INTO señales (nit, archivo) VALUES (?, ?)", (nit, archivo))
+
+                conn.commit()
+                conn.close()
+                status_label.configure(text="Datos guardados correctamente en la base de datos")
+            except Exception as e:
+                status_label.configure(text=f"Error al guardar: {e}")
+
+        btn_save = ctk.CTkButton(form_frame, text="Guardar en base de datos", command=save_to_db)
+        btn_save.pack(pady=10, fill="x")
+
+        # Buscador por NIT
+        entry_search_nit = ctk.CTkEntry(form_frame, placeholder_text="Buscar por NIT")
+        entry_search_nit.pack(pady=4, fill="x")
+
+        preview_frame = ctk.CTkFrame(registro_frame, fg_color="white")
+        preview_frame.pack(side="left", fill="both", expand=True, padx=12, pady=6)
+
+        preview_label = ctk.CTkLabel(preview_frame, text="Vista previa de usuario y señales", font=(None, 14, "bold"))
+        preview_label.pack(pady=6)
+        
+        # Subframes
+        user_info_frame = ctk.CTkFrame(preview_frame, fg_color="transparent")
+        user_info_frame.pack(fill="x", pady=6)
+
+        selector_frame = ctk.CTkFrame(preview_frame, fg_color="transparent")
+        selector_frame.pack(fill="x", pady=6)
+
+        graph_frame = ctk.CTkFrame(preview_frame, fg_color="transparent")
+        graph_frame.pack(fill="both", expand=True, pady=6)
+
+        def search_by_nit():
+            nit = entry_search_nit.get()
+            if not nit:
+                status_label.configure(text="Ingrese un NIT para buscar")
+                return
+
+            try:
+                import sqlite3
+                conn = sqlite3.connect("usuarios.db")
+                cursor = conn.cursor()
+
+                # Buscar usuario
+                cursor.execute("SELECT nombre, edad, correo FROM registro WHERE nit = ?", (nit,))
+                usuario = cursor.fetchone()
+
+                # Limpiar solo si los subframes existen
+                clear_frame_safe(user_info_frame)
+                clear_frame_safe(selector_frame)
+                clear_frame_safe(graph_frame)
+
+                if usuario:
+                    nombre, edad, correo = usuario
+                    ctk.CTkLabel(user_info_frame, text=f"Usuario: {nombre}", font=(None, 14, "bold")).pack(anchor="w")
+                    ctk.CTkLabel(user_info_frame, text=f"Edad: {edad}").pack(anchor="w")
+                    ctk.CTkLabel(user_info_frame, text=f"Correo: {correo}").pack(anchor="w")
+
+                    # Buscar señales asociadas
+                    cursor.execute("SELECT archivo FROM señales WHERE nit = ?", (nit,))
+                    archivos = [a[0] for a in cursor.fetchall()]
+
+                    if archivos:
+                        def mostrar_señal(archivo):
+                            clear_frame_safe(graph_frame)
+                            try:
+                                fig = cargar_graficar_csv.plot_g1(archivo)
+                                canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+                                canvas.draw()
+                                canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+
+                                toolbar = NavigationToolbar2Tk(canvas, graph_frame)
+                                toolbar.update()
+                                toolbar.pack(side="top", fill="x")
+                            except Exception as e:
+                                ctk.CTkLabel(graph_frame, text=f"Error al graficar {archivo}: {e}", text_color="red").pack()
+
+                        selector = ctk.CTkOptionMenu(selector_frame, values=archivos, command=mostrar_señal)
+                        selector.pack(fill="x", pady=4)
+
+                        # Mostrar la primera señal por defecto
+                        mostrar_señal(archivos[0])
+                    else:
+                        ctk.CTkLabel(graph_frame, text="No hay señales asociadas a este NIT", text_color="red").pack()
+                else:
+                    ctk.CTkLabel(graph_frame, text="NIT no encontrado en la base de datos", text_color="red").pack()
+
+                conn.close()
+            except Exception as e:
+                status_label.configure(text=f"Error en la búsqueda: {e}")
+
+
+        btn_search = ctk.CTkButton(form_frame, text="Buscar", command=search_by_nit)
+        btn_search.pack(pady=4, fill="x")
+
+        status_label = ctk.CTkLabel(form_frame, text="Complete el formulario y seleccione señales", text_color="#333333")
+        status_label.pack(pady=6, fill="x")
+
 
     elif tab_name == "Acerca de":
         # Listado de grabaciones (placeholder)
@@ -212,25 +420,12 @@ def get_tab_frame(parent, tab_name):
         "Arquitectura\nUniversidad de Pamplona, Colombia\n 2025-2", font=(None, 20))
         info5.pack(padx=16, pady=8)
 
+
     elif tab_name == "Análisis":
-        title = ctk.CTkLabel(frame, text="Análisis de señales", font=(None, 18, "bold"))
-        title.pack(pady=(8, 4))
+        #title = ctk.CTkLabel(frame, text="Análisis de señales", font=(None, 18, "bold"))
+        #title.pack(pady=(8, 4))
 
         selected_file = {"path": None}
-
-        # --- Funciones auxiliares ---
-        def fig_to_ctkimage(fig, size=(1000,350)):
-            buf = BytesIO()
-            fig.savefig(buf, format="png", dpi=100)
-            buf.seek(0)
-            pil_img = Image.open(buf)
-            return ctk.CTkImage(light_image=pil_img, size=size)
-
-        def update_placeholder(placeholder, img):
-            for widget in placeholder.winfo_children():
-                widget.destroy()
-            lbl = ctk.CTkLabel(placeholder, image=img, text="")
-            lbl.pack(fill="both", expand=True)
 
         # --- Funciones principales ---
         def select_file():
@@ -247,10 +442,21 @@ def get_tab_frame(parent, tab_name):
             if not selected_file["path"]:
                 return status_label.configure(text="Error: seleccione un archivo primero")
             try:
+                # Limpiar placeholders
+                for widget in g1_placeholder.winfo_children():
+                    widget.destroy()
+                for widget in g2_placeholder.winfo_children():
+                    widget.destroy()
+
                 # g1
                 fig1 = cargar_graficar_csv.plot_g1(selected_file["path"])
-                img1 = fig_to_ctkimage(fig1)
-                update_placeholder(g1_placeholder, img1)
+                canvas1 = FigureCanvasTkAgg(fig1, master=g1_placeholder)
+                canvas1.draw()
+                canvas1.get_tk_widget().pack(side="top", fill="both", expand=True)
+                canvas1.get_tk_widget().configure(width=400, height=330)  
+                toolbar1 = NavigationToolbar2Tk(canvas1, g1_placeholder)
+                toolbar1.update()
+                toolbar1.pack(side="top", fill="x")
 
                 # g2 según método
                 method = method_var.get()
@@ -258,10 +464,16 @@ def get_tab_frame(parent, tab_name):
                     fig2 = fft_csv.plot_fft(selected_file["path"])
                 else:
                     fig2 = dwt_csv.plot_wavelet(selected_file["path"])
-                img2 = fig_to_ctkimage(fig2)
-                update_placeholder(g2_placeholder, img2)
 
-                status_label.configure(text="Gráficas incrustadas")
+                canvas2 = FigureCanvasTkAgg(fig2, master=g2_placeholder)
+                canvas2.draw()
+                canvas2.get_tk_widget().pack(side="top", fill="both", expand=True)
+                canvas2.get_tk_widget().configure(width=400, height=330)  
+                toolbar2 = NavigationToolbar2Tk(canvas2, g2_placeholder)
+                toolbar2.update()
+                toolbar2.pack(side="top", fill="x")
+
+                status_label.configure(text="Gráficas interactivas incrustadas")
             except Exception as e:
                 status_label.configure(text=f"Error al generar gráficas: {e}")
 
@@ -269,43 +481,51 @@ def get_tab_frame(parent, tab_name):
             if not selected_file["path"]:
                 return status_label.configure(text="Error: seleccione un archivo primero")
             try:
-                # Generar el archivo WAV en la misma ruta y con el mismo nombre base
                 wav_file = csv_to_wav.csv_to_wav(selected_file["path"])
-
-                # Reproducirlo en segundo plano (no bloquea la GUI)
                 csv_to_wav.play_wav(wav_file)
-
                 status_label.configure(text=f"Reproduciendo señal: {os.path.basename(wav_file)}")
             except Exception as e:
                 status_label.configure(text=f"Error al reproducir: {e}")
 
-        # Controles de la pestaña
-        top_frame = ctk.CTkFrame(frame, fg_color="transparent")
-        top_frame.pack(pady=6, fill="x")
+        # --- Layout principal: gráficas a la izquierda, controles a la derecha ---
+        main_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        btn_file = ctk.CTkButton(top_frame, text="Seleccionar archivo", command=select_file)
-        btn_file.pack(side="left", padx=6)
-        file_label = ctk.CTkLabel(top_frame, text="Ningún archivo seleccionado", text_color="#333333")
-        file_label.pack(side="left", padx=6)
+        # Columna izquierda con gráficas
+        graphs_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        graphs_frame.pack(side="right", fill="both", expand=True)
 
-        method_var = ctk.StringVar(value="fft")
-        ctk.CTkRadioButton(top_frame, text="FFT", variable=method_var, value="fft").pack(side="left", padx=6)
-        ctk.CTkRadioButton(top_frame, text="Wavelet", variable=method_var, value="wavelet").pack(side="left", padx=6)
-
-        btn_run = ctk.CTkButton(top_frame, text="Iniciar", command=run_both_graphs)
-        btn_run.pack(side="left", padx=6)
-
-        btn_audio = ctk.CTkButton(top_frame, text="Escuchar señal", command=play_signal)
-        btn_audio.pack(side="left", padx=6)
-
-        # Placeholders verticales
-        g1_placeholder = ctk.CTkFrame(frame, fg_color="white", height=200)
+        g1_placeholder = ctk.CTkFrame(graphs_frame, fg_color="white", height=200)
         g1_placeholder.pack(fill="both", expand=True, padx=12, pady=6)
-        g2_placeholder = ctk.CTkFrame(frame, fg_color="white", height=200)
+
+        g2_placeholder = ctk.CTkFrame(graphs_frame, fg_color="white", height=200)
         g2_placeholder.pack(fill="both", expand=True, padx=12, pady=6)
 
-        status_label = ctk.CTkLabel(frame, text="Seleccione un archivo para comenzar", text_color="#333333")
-        status_label.pack(pady=6)
+        # Columna derecha con controles en vertical
+        controls_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        controls_frame.pack(side="left", fill="y", padx=10)
+        
+        title = ctk.CTkLabel(controls_frame, text="Análisis de señales", font=(None, 18, "bold"))
+        title.pack(pady=(8, 4), fill="x")
+
+        btn_file = ctk.CTkButton(controls_frame, text="Seleccionar archivo", command=select_file)
+        btn_file.pack(pady=4, fill="x")
+
+        file_label = ctk.CTkLabel(controls_frame, text="Ningún archivo seleccionado", text_color="#333333")
+        file_label.pack(pady=4, fill="x")
+
+        method_var = ctk.StringVar(value="fft")
+        ctk.CTkRadioButton(controls_frame, text="FFT", variable=method_var, value="fft").pack(pady=4, fill="x")
+        ctk.CTkRadioButton(controls_frame, text="Wavelet", variable=method_var, value="wavelet").pack(pady=4, fill="x")
+
+        btn_run = ctk.CTkButton(controls_frame, text="Iniciar", command=run_both_graphs)
+        btn_run.pack(pady=4, fill="x")
+
+        btn_audio = ctk.CTkButton(controls_frame, text="Escuchar señal", command=play_signal)
+        btn_audio.pack(pady=4, fill="x")
+
+        status_label = ctk.CTkLabel(controls_frame, text="Seleccione un archivo para comenzar", text_color="#333333")
+        status_label.pack(pady=10, fill="x")
 
     elif tab_name == "Adquisición":
         # Controles de adquisción de la señal
