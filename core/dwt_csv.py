@@ -12,7 +12,7 @@ def plot_wavelet(path, wavelet='db6', nivel=1):
     df = pd.read_csv(path)
     tiempo = df['tiempo'].values
     voltaje = df['voltios'].values
-    num_datos = len(voltaje) # Número de puntos de datos
+    num_datos = len(voltaje)
 
     # Aplicamos la DWT 
     cA, cD = pywt.dwt(voltaje, wavelet, mode='symmetric')

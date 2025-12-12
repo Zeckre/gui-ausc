@@ -4,21 +4,10 @@ from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from core import cargar_graficar_csv, fft_csv, dwt_csv, csv_to_wav
 
-
 def TabAnalisis(parent):
-    """
-    Construye y devuelve el frame completo de la pestaña Análisis.
-    No usa clases, solo funciones internas y closures.
-    """
-
     frame = ctk.CTkFrame(parent, fg_color="transparent")
 
     selected_file = {"path": None}
-
-    # ============================
-    #   FUNCIONES INTERNAS
-    # ============================
-
     def select_file():
         file_path = filedialog.askopenfilename(
             title="Seleccionar archivo",
@@ -81,14 +70,10 @@ def TabAnalisis(parent):
         except Exception as e:
             status_label.configure(text=f"Error al reproducir: {e}")
 
-    # ============================
-    #   LAYOUT PRINCIPAL
-    # ============================
-
     main_frame = ctk.CTkFrame(frame, fg_color="transparent")
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Columna izquierda (gráficas)
+    # Columna derecha
     graphs_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
     graphs_frame.pack(side="right", fill="both", expand=True)
 
@@ -98,7 +83,7 @@ def TabAnalisis(parent):
     g2_placeholder = ctk.CTkFrame(graphs_frame, fg_color="white", height=200)
     g2_placeholder.pack(fill="both", expand=True, padx=12, pady=6)
 
-    # Columna derecha (controles)
+    # Columna izquierda
     controls_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
     controls_frame.pack(side="left", fill="y", padx=10)
 

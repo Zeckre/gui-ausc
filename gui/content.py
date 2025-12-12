@@ -10,37 +10,13 @@ from gui.tabs.ac_registro import TabRegistro
 from gui.tabs.ad_prediccion import TabPrediccion
 from gui.tabs.af_acerca_de import TabAcercaDe
 
-
-
 # Compat helpers: algunas versiones de customtkinter no incluyen CTkTextbox o CTkComboBox
 CTkTextboxClass = getattr(ctk, "CTkTextbox", None)
 CTkComboBoxClass = getattr(ctk, "CTkComboBox", None)
 CTkOptionMenuClass = getattr(ctk, "CTkOptionMenu", None)
 
-
-def create_textbox(parent, width=None, height=None):
-    # Crear un widget editable o un fallback.
-    # - Si la versión de customtkinter provee `CTkTextbox` lo usa.
-    # - Si no, muestra una etiqueta informativa en su lugar.
-    if CTkTextboxClass:
-        return CTkTextboxClass(parent, width=width, height=height)
-
-    # Fallback: mostrar una etiqueta que indique que el editor no está disponible
-    frame = ctk.CTkFrame(parent, fg_color="white", corner_radius=10)
-    label = ctk.CTkLabel(
-        frame,
-        text="(Editor de texto no disponible en esta versión)",
-        wraplength=width or 400,
-        text_color="#333333",
-    )
-    label.pack(fill="both", expand=True, padx=8, pady=8)
-    return frame
-
-
 class SimpleOptionWrapper(ctk.CTkFrame):
     # Un combo mínimo hecho solo con CTk: etiqueta + botón que cicla opciones.
-    # Esto evita depender de `tk.OptionMenu` o variables de tkinter en versiones antiguas.
-
     def __init__(self, parent, values, width=None, default=None):
         super().__init__(parent, fg_color="transparent")
         self.values = values or []
@@ -69,10 +45,9 @@ class SimpleOptionWrapper(ctk.CTkFrame):
         # Retorna la opción actual.
         return self.values[self.index] if self.values else ""
 
-
 def create_combo(parent, values, width=None, default=None):
     # Crear un combo box o un fallback compatible con CTk.
-    # Prioriza `CTkComboBox` o `CTkOptionMenu` si existen; si no, usa `SimpleOptionWrapper`.
+    # Prioriza CTkComboBox o CTkOptionMenu si existen; si no, usa SimpleOptionWrapper.
     if CTkComboBoxClass:
         cb = CTkComboBoxClass(parent, values=values, width=width)
         if default:

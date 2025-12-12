@@ -14,7 +14,7 @@ def plot_fft(path):
     df = pd.read_csv(path)
     tiempo = df['tiempo'].values
     voltaje = df['voltios'].values
-    num_datos = len(voltaje) # Número de puntos de datos
+    num_datos = len(voltaje)
 
     # Calcular la tasa de muestreo promedio (Fs)
     if num_datos > 1:

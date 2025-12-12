@@ -33,13 +33,10 @@ def create_footer(root, check_spi_func):
             connected = check_spi_func()
         except Exception:
             connected = False
-
         status_label.configure(
             text=f"Estado del dispositivo: {'Activo' if connected else 'Desconectado'}"
         )
-
         root.after(1000, update_time_and_status)
-
     # Arrancar primer ciclo
     update_time_and_status()
 

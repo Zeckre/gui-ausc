@@ -4,7 +4,7 @@ from scipy.io.wavfile import write
 import sys, subprocess, os
 
 COLUMNA_VOLTAJE = 'voltios'
-SAMPLE_RATE_AUDIO = 6800  # usa un valor estándar para que se escuche bien
+SAMPLE_RATE_AUDIO = 6800
 
 def csv_to_wav(path_csv, sample_rate=SAMPLE_RATE_AUDIO):
     if not os.path.exists(path_csv):
@@ -38,9 +38,6 @@ def csv_to_wav(path_csv, sample_rate=SAMPLE_RATE_AUDIO):
     return path_wav
 
 def play_wav(path_wav):
-    """
-    Reproduce el archivo WAV usando 'aplay' o 'omxplayer' en segundo plano.
-    """
     if not os.path.exists(path_wav):
         raise FileNotFoundError(f"No se encontró el archivo WAV '{path_wav}'")
 

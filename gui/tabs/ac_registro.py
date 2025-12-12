@@ -4,27 +4,21 @@ from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from core import cargar_graficar_csv
 
-
 def TabRegistro(parent):
     frame = ctk.CTkFrame(parent, fg_color="transparent")
     base_dir  = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     db_path = os.path.join(base_dir, "data", "usuarios.db")
 
-    # ------------------------------
-    # Función auxiliar para limpiar frames
-    # ------------------------------
+    # Para limpiar los frames d la ventana
     def clear_frame_safe(f):
         if f and f.winfo_exists():
             for w in f.winfo_children():
                 w.destroy()
 
-    # ------------------------------
-    # Estructura principal
-    # ------------------------------
     registro_frame = ctk.CTkFrame(frame, fg_color="transparent")
     registro_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Columna izquierda (formulario)
+    # Columna izquierda
     form_frame = ctk.CTkFrame(registro_frame, fg_color="transparent")
     form_frame.pack(side="left", fill="y", padx=10)
 
@@ -47,9 +41,7 @@ def TabRegistro(parent):
 
     selected_signals = []
 
-    # ------------------------------
-    # Seleccionar señales
-    # ------------------------------
+   # Seleccionar una señal
     def select_signals():
         files = filedialog.askopenfilenames(
             title="Seleccionar señales",
@@ -82,9 +74,7 @@ def TabRegistro(parent):
     signals_label = ctk.CTkLabel(form_frame, text="Ninguna señal seleccionada", text_color="#333333")
     signals_label.pack(pady=4, fill="x")
 
-    # ------------------------------
-    # Guardar en base de datos
-    # ------------------------------
+    # Integración con la base de datos 
     def save_to_db():
         nombre = entry_nombre.get()
         apellido = entry_apellido.get()
@@ -139,15 +129,11 @@ def TabRegistro(parent):
 
     ctk.CTkButton(form_frame, text="Guardar en base de datos", command=save_to_db).pack(pady=10, fill="x")
 
-    # ------------------------------
-    # Búsqueda por NIT
-    # ------------------------------
+    # Para buscar en la base de datos input
     entry_search_nit = ctk.CTkEntry(form_frame, placeholder_text="Buscar por NIT")
     entry_search_nit.pack(pady=4, fill="x")
 
-    # ------------------------------
-    # Vista previa derecha
-    # ------------------------------
+    # Vista frame derecho
     preview_frame = ctk.CTkFrame(registro_frame, fg_color="white")
     preview_frame.pack(side="left", fill="both", expand=True, padx=12, pady=6)
 
@@ -162,9 +148,7 @@ def TabRegistro(parent):
     graph_frame = ctk.CTkFrame(preview_frame, fg_color="transparent")
     graph_frame.pack(fill="both", expand=True, pady=6)
 
-    # ------------------------------
-    # Buscar usuario por NIT
-    # ------------------------------
+    # Buscar en lña base de datos
     def search_by_nit():
         nit = entry_search_nit.get()
         if not nit:
