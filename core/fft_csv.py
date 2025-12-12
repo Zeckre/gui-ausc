@@ -29,7 +29,7 @@ def plot_fft(path):
     yf = np.abs(fft(voltaje))
     xf = fftfreq(num_datos, 1/Fs)
 
-   # --- Figura ---
+   # Figura de la FFT
     fig, ax = plt.subplots(figsize=(4,2))
     ax.plot(xf[:num_datos//2], 2.0/num_datos * yf[:num_datos//2],
             linewidth=0.5) 

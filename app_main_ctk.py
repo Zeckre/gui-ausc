@@ -1,15 +1,14 @@
 import customtkinter as ctk
 from datetime import datetime
-from tab_content_ctk import get_tab_frame
-from check_i2c import check_i2c_device
-from footer_ctk import create_footer
+from gui.tab_content_ctk import get_tab_frame
+from utils.check_spi import check_spi
+from gui.footer_ctk import create_footer
 import os
 
 try:
     from PIL import Image, ImageTk
 except Exception:
     Image = None
-
 
 def _load_image(path, size=None):
     # Cargar una imagen desde el disco y devolver un objeto de imagen compatible con CTk.
@@ -31,8 +30,9 @@ def main():
 
     # Crear la ventana principal
     root = ctk.CTk()
-    root.title("BioMonitor - Estetoscopio Digital")
-    root.geometry("2120x1180")
+    root.title("DAQ Estetoscopio")
+    root.geometry("1920x1080")
+    root.wm_attributes('-fullscreen', True)
     root.grid_columnconfigure(0, weight=1)
     # Hacer que la fila de la vista de pestañas sea expandible para
     # que el contenido de las pestañas ocupe todo el espacio disponible.
@@ -44,8 +44,8 @@ def main():
     header.grid_columnconfigure(1, weight=1)
 
     # Cargamos las imagenes en variables
-    left_img = _load_image("escudounipamplona.png", size=(90, 90))
-    right_img = _load_image("siibtel_logo.png", size=(90, 90))
+    left_img = _load_image("gui/resources/escudounipamplona.png", size=(90, 90))
+    right_img = _load_image("gui/resources/siibtel_logo.png", size=(90, 90))
 
     # posición de la imagen izquierda
     if left_img:
@@ -59,7 +59,7 @@ def main():
     title_frame.grid(row=0, column=1, sticky="ew")
     title_frame.grid_columnconfigure(0, weight=1)
     title = ctk.CTkLabel(title_frame, text="Auscultation Monitor", font=(None, 26, "bold"), text_color="#03045E")
-    subtitle = ctk.CTkLabel(title_frame, text="Sistema de monitoreo estetoscopio digital", font=(None, 20), text_color="#0077B6")
+    subtitle = ctk.CTkLabel(title_frame, text="Interfaz de visualización de señales del DAQ", font=(None, 20), text_color="#0077B6")
     title.pack(anchor="center")
     subtitle.pack(anchor="center")
 
@@ -73,7 +73,7 @@ def main():
     # Pestañas (hacer que la vista de pestañas se expanda verticalmente)
     tabview = ctk.CTkTabview(root, width=1000)
     tabview.grid(row=1, column=0, sticky="nsew", padx=16, pady=(14, 0))
-    tab_names = ["Adquisición", "Análisis", "Registro", "Tiempo real", "Acerca de"]
+    tab_names = ["Adquisición", "Análisis", "Registro", "Predicción", "Acerca de"]
     for name in tab_names:
         tabview.add(name)
 
@@ -92,7 +92,7 @@ def main():
 
     # FOOTER: delegar la creación y actualización al módulo `footer_ctk`.
     # `create_footer` añadirá el frame al `root` y arrancará su propio loop de actualización.
-    create_footer(root, check_i2c_device)
+    create_footer(root, check_spi)
     root.mainloop()
 
 if __name__ == "__main__":
