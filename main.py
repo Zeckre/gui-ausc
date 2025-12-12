@@ -1,8 +1,8 @@
 import customtkinter as ctk
 from datetime import datetime
-from gui.tab_content_ctk import get_tab_frame
+from gui.content import get_tab_frame
 from utils.check_spi import check_spi
-from gui.footer_ctk import create_footer
+from gui.footer import create_footer
 import os
 
 try:

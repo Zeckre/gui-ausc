@@ -2,11 +2,6 @@ import customtkinter as ctk
 from datetime import datetime
 
 def create_footer(root, check_spi_func):
-    """
-    Crea y añade el footer a `root` y arranca el bucle de actualización.
-    - root: ventana principal (CTk)
-    - check_spi_func: función que retorna True/False según estado del dispositivo SPI
-    """
     footer = ctk.CTkFrame(root, fg_color="transparent")
     footer.grid(row=3, column=0, sticky="ew", padx=16, pady=(0, 12))
     footer.grid_columnconfigure(1, weight=1)
