@@ -35,16 +35,17 @@ def adquirir_csv(num_muestras, nombre_archivo):
     print(f"Recolección completada en {duracion:.2f} segundos.")
     print(f"Tasa de muestreo aproximada: {num_muestras / duracion:.2f} Hz")
 
-    # Verificar si se aplico el offset
+    # Verificar si se aplicó el offset
     media_final = np.mean([d[1] for d in datos])
     print(f"Media de los datos adquiridos (verificación de offset): {media_final:.4f}V")
+    datos_corregidos = [[t, v - media_final] for t, v in datos]
 
     # Guardar los datos en un archivo CSV
     try:
         with open(nombre_archivo, mode='w', newline='') as archivo_csv:
             escritor_csv = csv.writer(archivo_csv)
             escritor_csv.writerow(['tiempo', 'voltios']) 
-            escritor_csv.writerows(datos) # Escribir todas las filas
+            escritor_csv.writerows(datos_corregidos)
 
         print(f"Datos guardados en '{nombre_archivo}'")
 

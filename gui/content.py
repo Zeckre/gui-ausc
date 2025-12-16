@@ -15,39 +15,8 @@ CTkTextboxClass = getattr(ctk, "CTkTextbox", None)
 CTkComboBoxClass = getattr(ctk, "CTkComboBox", None)
 CTkOptionMenuClass = getattr(ctk, "CTkOptionMenu", None)
 
-class SimpleOptionWrapper(ctk.CTkFrame):
-    # Un combo mínimo hecho solo con CTk: etiqueta + botón que cicla opciones.
-    def __init__(self, parent, values, width=None, default=None):
-        super().__init__(parent, fg_color="transparent")
-        self.values = values or []
-        self.index = 0
-        if default and default in self.values:
-            self.index = self.values.index(default)
-
-        # Etiqueta que muestra la opción actual
-        self.label = ctk.CTkLabel(self, text=self.values[self.index] if self.values else "")
-        self.label.pack(side="left", fill="x", expand=True)
-
-    def _next(self):
-        # Avanza a la siguiente opción (cíclico).
-        if not self.values:
-            return
-        self.index = (self.index + 1) % len(self.values)
-        self.label.configure(text=self.values[self.index])
-
-    def set(self, v):
-        # Establece un valor si existe en la lista.
-        if v in self.values:
-            self.index = self.values.index(v)
-            self.label.configure(text=v)
-
-    def get(self):
-        # Retorna la opción actual.
-        return self.values[self.index] if self.values else ""
 
 def create_combo(parent, values, width=None, default=None):
-    # Crear un combo box o un fallback compatible con CTk.
-    # Prioriza CTkComboBox o CTkOptionMenu si existen; si no, usa SimpleOptionWrapper.
     if CTkComboBoxClass:
         cb = CTkComboBoxClass(parent, values=values, width=width)
         if default:
@@ -69,8 +38,6 @@ def create_combo(parent, values, width=None, default=None):
     return SimpleOptionWrapper(parent, values=values, width=width, default=default)
 
 def get_tab_frame(parent, tab_name):
-    # Devuelve un `CTkFrame` que contiene el contenido para la pestaña indicada.
-    # Separe la generación del contenido por pestaña para mantener la UI modular.
     frame = ctk.CTkFrame(parent, corner_radius=10)
 
     if tab_name == "Predicción":

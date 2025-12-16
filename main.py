@@ -90,8 +90,6 @@ def main():
         frame = get_tab_frame(container, name)
         frame.grid(row=0, column=0, sticky="nsew", padx=12, pady=8)
 
-    # FOOTER: delegar la creación y actualización al módulo `footer_ctk`.
-    # `create_footer` añadirá el frame al `root` y arrancará su propio loop de actualización.
     create_footer(root, check_spi)
     root.mainloop()
 
