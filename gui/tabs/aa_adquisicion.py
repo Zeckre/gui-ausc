@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import os, sys, threading
-from core import  adquirircsv
+from core.adquirircsv import adquirir_csv
 
 def TabAdquisicion(parent):
     frame = ctk.CTkFrame(parent, fg_color="transparent")
@@ -59,7 +59,7 @@ def TabAdquisicion(parent):
             archivo = os.path.join(ruta, nombre + ".csv")
 
             # Hilo para no congelar la GUI
-            hilo = threading.Thread(target=lambda: adquisicion.adquirir_csv(cantidad, archivo))
+            hilo = threading.Thread(target=lambda: adquirir_csv(cantidad, archivo))
             hilo.start()
 
             print(f"Archivo guardado en: {archivo}")

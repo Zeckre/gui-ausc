@@ -85,12 +85,21 @@ print(classification_report(y_test, y_pred, target_names=['Healthy','COPD']))
 
 cm = confusion_matrix(y_test, y_pred)
 plt.figure(figsize=(5,4))
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+ax = sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
             xticklabels=['Healthy','COPD'],
-            yticklabels=['Healthy','COPD'])
-plt.xlabel("Predicted")
-plt.ylabel("True")
-plt.title("Matriz de confusión SVM balanceado")
+            yticklabels=['Healthy','COPD'],
+            annot_kws={"size":32})
+plt.xlabel("Predicted", fontsize=32)
+plt.ylabel("True", fontsize=32)
+plt.title("Matriz de confusión SVM balanceado", fontsize=32)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
+
+# Ajustar tamaño de los números en la barra de color
+cbar = ax.collections[0].colorbar
+cbar.ax.tick_params(labelsize=24)
+
+plt.tight_layout()
 plt.show()
 
 # Guardar el modelo entrenado
